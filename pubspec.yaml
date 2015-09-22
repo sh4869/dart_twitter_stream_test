@@ -1,0 +1,10 @@
+name: twitter_stream_test
+author: sh4869 <nobuk4869@gmail.com> # name <email>
+homepage: https://github.com/sh4869/twitter_stream_test # https://github.com/user/repo
+version: 0.1.0
+environment:
+  sdk: '>=1.0.0 <2.0.0'
+description: Twitter Streaming API Test Program
+dependencies:
+  http: '>=0.11.3+2 <0.12.0'
+  oauth: '>=0.3.0 <0.4.0'
