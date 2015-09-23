@@ -6,14 +6,23 @@ import 'package:http/http.dart' as http;
 import 'package:oauth/oauth.dart' as oauth;
 
 Future<String> displaytweet(Stream<String> tweets) async {
-  await for (var tweet in tweets) {
-    try {
-      var map = JSON.decode(tweet);
-      if (!map.containsKey("delete")) {
-        print(map["user"]["name"] + " " + map["text"]);
+  RegExp exp = new RegExp("\{*\}");
+  var file = new File("stream.txt");
+  JsonDecoder decoder = new JsonDecoder();
+  await for (var tweetSource in tweets) {
+    var tweetText = LineSplitter.split(tweetSource);
+    for (var tweet in tweetText) {
+      if (exp.hasMatch(tweet)) {
+        try {
+          var tweetObj = decoder.convert(tweet);
+          if (!tweetObj.containsKey("delete")) {
+            print(tweetObj["text"] + " " + tweetObj["user"]["screen_name"]);
+          }
+        } catch (e) {
+          print(e);
+          file.writeAsStringSync(tweet + "\n",mode:FileMode.APPEND);
+        }
       }
-    } catch (e) {
-      print(e);
     }
   }
   return "";
