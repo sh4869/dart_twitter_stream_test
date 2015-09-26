@@ -5,23 +5,48 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:oauth/oauth.dart' as oauth;
 
-Future<String> displaytweet(Stream<String> tweets) async {
-  RegExp exp = new RegExp("\{*\}");
-  var file = new File("stream.txt");
+const int _LF = 10;
+const int _CR = 13;
+
+Iterable<String> splitOnlyCRLF(String lines, [int start = 0, int end]) sync* {
+  end = RangeError.checkValidRange(start, end, lines.length);
+  int sliceStart = start;
+  int char = 0;
+  for (int i = start; i < end; i++) {
+    int previousChar = char;
+    char = lines.codeUnitAt(i);
+    if (char != _LF) continue;
+    if (previousChar != _CR) {
+      continue;
+    }
+    yield lines.substring(sliceStart, i);
+    sliceStart = i + 1;
+  }
+  if (sliceStart < end) {
+    yield lines.substring(sliceStart, end);
+  }
+}
+
+Future<String> displaytweet(Stream<String> tweetData) async {
   JsonDecoder decoder = new JsonDecoder();
-  await for (var tweetSource in tweets) {
-    var tweetText = LineSplitter.split(tweetSource);
+  String BrokenTweet = "";
+  await for (var tweetSource in tweetData) {
+    var tweetText = splitOnlyCRLF(tweetSource);
     for (var tweet in tweetText) {
-      if (exp.hasMatch(tweet)) {
-        try {
+      try {
+        tweet = BrokenTweet + tweet;
+        tweet = tweet.replaceAll(new RegExp("(\r|\n)"), "");
+        if (tweet.startsWith("{") && tweet.endsWith("}")) {
           var tweetObj = decoder.convert(tweet);
-          if (!tweetObj.containsKey("delete")) {
+          if (tweetObj.containsKey("created_at")) {
             print(tweetObj["text"] + " " + tweetObj["user"]["screen_name"]);
           }
-        } catch (e) {
-          print(e);
-          file.writeAsStringSync(tweet + "\n",mode:FileMode.APPEND);
+          BrokenTweet = "";
+        } else {
+          BrokenTweet = tweet;
         }
+      } catch (e) {
+        print(e.toString());
       }
     }
   }
